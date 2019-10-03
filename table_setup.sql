@@ -16,7 +16,7 @@ CREATE TABLE users(
 CREATE TABLE companies(
 	companyid INT PRIMARY KEY,
 	name VARCHAR(127),
-	location VARCHAR(255),
+	location VARCHAR(255)
 );
 
 CREATE TABLE adminfor(
@@ -27,7 +27,7 @@ CREATE TABLE adminfor(
 CREATE TABLE worksfor(
 	companyid INT,
 	email VARCHAR(127),
-	role VARCHAR(127)
+	role VARCHAR(127),
 	startdate VARCHAR(31)
 );
 
@@ -37,7 +37,7 @@ CREATE TABLE availability(
 	role VARCHAR(127),
 	day_ DATE,
 	starttime TIME,
-	endtime TIME,
+	endtime TIME
 );
 
 -- add test data below
