@@ -1,6 +1,26 @@
 #You need to pip3 install pulp to get this library
 from pulp import *
-import employeeClass 
+from employeeClass import *
+
+
+'''
+Idea
+
+Goodness = (W1*AvgEmployeeHappiness) + (W2*TotalHours)
+                    |
+                    |
+                    |
+                    \/
+                    AvgEmployeeHapiness = (E1+E2+E3...En) / n
+                                            |
+                                            |
+                                            |
+                                            \/
+                                            Ex = (-w3*ΔStartTime) + (-w4*ΔEndTime) + (-w5*ΔTotalHours)
+
+
+
+'''
 
 class Scheduler:
 
@@ -9,16 +29,14 @@ class Scheduler:
         self.employeeList = employeeList
         
         #weights assosciated with Goodness equation
-        self.weightEmpHap = 1
-        self.weightTotalHours = 1
+        self.w1 = 1
+        self.w2 = 1
 
         #Weights assosciated with Emp Hapiness Equation
         #The 'actual' values are the parameters we are messing with
-        self.w1 = .5 # -(|prefered start - actual start|)
-        self.w2 = .5 # -(|prefered end - actual end|)
-        self.w3 = .5 # -(|prefered Total - acutal total|)
-        self.w4 = .5 # -(|cantWorkStart - actual cantWorkStart|)
-        self.w5 = .5 # -(|cantWorkEnd - actual cantWorkEnd|)
+        self.w3 = .5 # -(|prefered start - actual start|)
+        self.w4 = .5 # -(|prefered end - actual end|)
+        self.w5 = .5 # -(|prefered Total - acutal total|)
 
     #pass in list of all employees
     def updateEmployees(self, employeeList):
@@ -39,25 +57,37 @@ class Scheduler:
         actualEnd = LpVariable("employees actual end time")
 
         #add the objective function
-        prob += (self.weightEmpHap * empHap) + (self.weightTotalHours * totalHours)
+        prob += (self.w1 * empHap) + (self.w2 * totalHours)
 
         #add constraints
-        #right now empHap is defined by a single 
-        prob += -1*self.w1*abs(employeeInfo.prefTotalHours-actualTotal) = empHap
+        for i in range(len(self.employeeList)):
+            prob += (-1*self.w3*(employeeList[i].prefStart-actualStart)) + (-1*self.w4*(employeeList[i].prefEnd-actualEnd)) + (-1*self.w5*(employeeList[i].prefTotalHours-actualTotal)) == empHap
+
+        #prob += totalHours <= 40 #cant work him more than 40, and he preferes 10
 
         prob.solve()
 
-
-
-
+        print("Status:", LpStatus[prob.status])
 
 
 if __name__ == "__main__":
-    employee1 = employeeClass.Employee()
-    employee1.setParams(12,18,6,0,10)
+    #create some employees
+    employee1 = Employee()
+    employee2 = Employee()
+    employee3 = Employee()
 
+    #Establish their prefered stuffs
+    employee1.setParams(12,18,6,0,10)
+    employee2.setParams(9,5,8,0,10)
+    employee3.setParams(10,7,9,0,10)
+
+    #create a list and add all of them to it
     employeeList = list()
     employeeList.append(employee1)
+    employeeList.append(employee2)
+    employeeList.append(employee3)
 
-    newSched = Scheduler()
+    #create a new schedule, then call calculate
+    newSched = Scheduler(employeeList)
+    newSched.calculate()
 
