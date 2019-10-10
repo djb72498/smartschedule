@@ -17,9 +17,6 @@ Goodness = (W1*AvgEmployeeHappiness) + (W2*TotalHours)
                                             |
                                             \/
                                             Ex = (-w3*ΔStartTime) + (-w4*ΔEndTime) + (-w5*ΔTotalHours)
-
-
-
 '''
 
 class Scheduler:
@@ -34,9 +31,11 @@ class Scheduler:
 
         #Weights assosciated with Emp Hapiness Equation
         #The 'actual' values are the parameters we are messing with
-        self.w3 = .5 # -(|prefered start - actual start|)
-        self.w4 = .3 # -(|prefered end - actual end|)
+        self.w3 = .1 # -(|prefered start - actual start|)
+        self.w4 = .1 # -(|prefered end - actual end|)
         self.w5 = .5 # -(|prefered Total - acutal total|)
+
+        self.employeeVars = list()
 
     #pass in list of all employees
     def updateEmployees(self, employeeList):
@@ -50,7 +49,6 @@ class Scheduler:
         
         #define variables
         avgEmpHap = LpVariable("empHap")
-        avgHours = LpVariable("avgHours")
 
         #the sum of each employees vars with weights will equal that employees hapiness
         empHaps = [0]*len(employees)
@@ -58,33 +56,55 @@ class Scheduler:
             empHaps[i] = LpVariable("empHap"+ str(i))
         
         #each employee gets their own set of variable for actual
-        # Ex = (-w3*ΔStartTime) + (-w4*ΔEndTime) + (-w5*ΔTotalHours)
         employeeVars = [[0]*3]*len(employees)
         for i in range(len(employees)):
             employeeVars[i][0] = LpVariable("aStart" + str(i),0, 23) 
             employeeVars[i][1] = LpVariable("aEnd"+ str(i), 1, 24)
-            employeeVars[i][2] = LpVariable("aTotal"+ str(i), 0 , 10) #will work between 0 and 10
-
-
+            employeeVars[i][2] = LpVariable("aTotal"+ str(i), 0, 24) #will work between 0 and 10
 
         #add the objective function
-        prob += (self.w1*avgEmpHap) + (-1*self.w2*(10-avgHours)) #do not want more than 10 hours
+        prob += (self.w1*avgEmpHap) 
 
         #add constraints
-
         #Add contraints for each employees 
         for i in range(len(employees)):
             #this equation equals a given employees hapiness
-            prob += (-1*self.w3*(employees[i].prefStart-employeeVars[i][0])) + (-1*self.w4*(employees[i].prefEnd-employeeVars[i][1])) + (-1*self.w5*(employees[i].prefTotalHours-employeeVars[i][2])) == empHaps[i]
+            prob += (self.w5*(24-employees[i].prefTotalHours-employeeVars[i][2])) == empHaps[i] #as this gets higher, employee gets happier b/c he's getting right hours
+            #prob += employees[i].prefStart <= employeeVars[i][0] #make sure times are within availability window
+            #prob += employees[i].prefEnd >= employeeVars[i][1]
+            #prob += employeeVars[i][1] - employeeVars[i][0] == employeeVars[i][2]
+
 
         prob += (empHaps[0]+empHaps[1]+empHaps[2])/3 == avgEmpHap
-
 
         #prob += totalHours <= 40 #cant work him more than 40, and he preferes 10
         prob.solve()
 
+        print("HERE YOU GO", employeeVars[0][0].varValue, "to", employeeVars[0][1].varValue)
+
+        #save all of the employeevars
+        self.employeeVars = [[0]*3]*len(employees)
+        for i in range(len(employees)):
+            self.employeeVars[i][0] = employeeVars[i][0].varValue
+            self.employeeVars[i][1] = employeeVars[i][1].varValue
+            self.employeeVars[i][2] = employeeVars[i][2].varValue
+
         print("Status:", prob)
         print("Status:", LpStatus[prob.status])
+
+    def printSched(self):
+        print(self.employeeVars)
+        '''
+        for i in range(0,24):
+            print(str(i)+":00 -> ", end = "")
+            for j in range(len(self.employeeList)):
+                if self.employeeVars[j][0] <= i and self.employeeVars[j][1] > i: #if current time greater than start time and less than end time
+                    print("Emp"+str(j), end=" ")
+                else:
+                    print("   ", end = "")
+            print("") # just to add a newline
+        '''
+
 
 
 if __name__ == "__main__":
@@ -107,4 +127,5 @@ if __name__ == "__main__":
     #create a new schedule, then call calculate
     newSched = Scheduler(employeeList)
     newSched.calculate()
+    newSched.printSched()
 
